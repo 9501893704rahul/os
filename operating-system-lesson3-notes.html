@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operating System - Lesson 3 | Multi-Tasking, Multi-Processing, RTOS & CPU Scheduling</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #ffd700;
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #a0a0a0;
+            font-size: 1rem;
+        }
+
+        .slider-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px;
+            min-height: 520px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .slide h2 {
+            color: #ffd700;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .slide h3 {
+            color: #00d9ff;
+            font-size: 1.3rem;
+            margin: 20px 0 15px 0;
+        }
+
+        .slide p {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+        }
+
+        .slide ul {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+
+        .slide li {
+            line-height: 2;
+            font-size: 1.05rem;
+            color: #d0d0d0;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 170, 0, 0.1));
+            border-left: 4px solid #ffd700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .highlight-box.blue {
+            border-left-color: #00d9ff;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 217, 255, 0.05));
+        }
+
+        .highlight-box.green {
+            border-left-color: #00ff88;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.05));
+        }
+
+        .highlight-box.red {
+            border-left-color: #ff4757;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 71, 87, 0.05));
+        }
+
+        .highlight-box.purple {
+            border-left-color: #a855f7;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+        }
+
+        .key-point {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.3);
+            padding: 3px 10px;
+            border-radius: 5px;
+            margin: 2px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table th {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+
+        .comparison-table td {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            .slide {
+                padding: 25px;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        .process-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .process-box {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 170, 0, 0.2));
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .process-box.cpu {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.3), rgba(255, 71, 87, 0.2));
+            border-color: #ff4757;
+        }
+
+        .process-box.ram {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.3), rgba(0, 217, 255, 0.2));
+            border-color: #00d9ff;
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: #ffd700;
+        }
+
+        .formula-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid #00d9ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+        }
+
+        .formula-box .formula {
+            color: #00ff88;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .exam-tip {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 180, 0, 0.1));
+            border: 2px dashed #ffd700;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .exam-tip::before {
+            content: "📝 Exam Important: ";
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .gantt-chart {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .gantt-row {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .gantt-cell {
+            min-width: 60px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            font-weight: bold;
+            margin-right: -2px;
+        }
+
+        .gantt-cell.p1 { background: rgba(255, 107, 107, 0.6); }
+        .gantt-cell.p2 { background: rgba(78, 205, 196, 0.6); }
+        .gantt-cell.p3 { background: rgba(168, 230, 207, 0.6); color: #333; }
+        .gantt-cell.p4 { background: rgba(255, 217, 61, 0.6); color: #333; }
+        .gantt-cell.p5 { background: rgba(168, 85, 247, 0.6); }
+
+        .gantt-time {
+            display: flex;
+            margin-top: 5px;
+        }
+
+        .gantt-time span {
+            min-width: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .os-type-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .os-type-card h4 {
+            color: #ffd700;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            border: none;
+            padding: 15px 35px;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+        }
+
+        .nav-btn:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #00d9ff, #00ff88);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .slide-dots {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: #ffd700;
+            transform: scale(1.3);
+        }
+
+        .dot:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+
+        .timeline-diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .timeline-bar {
+            height: 30px;
+            background: linear-gradient(90deg, #ff6b6b, #ffd700, #00ff88, #00d9ff);
+            border-radius: 5px;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            top: -25px;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #fff;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .analogy-box {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.1));
+            border: 2px solid #a855f7;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .analogy-box::before {
+            content: "💡 Real-Life Analogy: ";
+            font-weight: bold;
+            color: #a855f7;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🖥️ Operating System - Lesson 3</h1>
+        <p>Multi-Tasking, Multi-Processing, Real-Time OS & CPU Scheduling</p>
+    </header>
+
+    <div class="slider-container">
+        <!-- Slide 1: Recap & Multi-Tasking Introduction -->
+        <div class="slide active">
+            <span class="slide-number">1 / 16</span>
+            <h2>📚 Recap: Multi-Programming Problem</h2>
+            
+            <div class="highlight-box red">
+                <h3>Problem from Last Lesson:</h3>
+                <p>In Multi-Programming, when CPU is assigned a task, it processes it until the task is <strong>completely finished and exits</strong>.</p>
+                <p>During I/O operations, CPU remains in <span class="key-point">IDLE state</span> instead of processing other tasks.</p>
+            </div>
+
+            <h3>The Solution: Scheduling Concept</h3>
+            <div class="highlight-box green">
+                <p><strong>Scheduling</strong> = Planning how to complete work with:</p>
+                <ul>
+                    <li>Minimum time</li>
+                    <li>Minimum effort</li>
+                    <li>Maximum efficiency</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                If 10 students are given the same task, all will complete it but in different times. The one who finishes fastest has better "processing speed" - that's scheduling optimization!
+            </div>
+        </div>
+
+        <!-- Slide 2: Multi-Tasking OS -->
+        <div class="slide">
+            <span class="slide-number">2 / 16</span>
+            <h2>🔄 Multi-Tasking Operating System</h2>
+
+            <div class="highlight-box">
+                <p><strong>Definition:</strong> Multi-Tasking is the <span class="key-point">upgraded version of Multi-Programming</span>.</p>
+            </div>
+
+            <div class="exam-tip">
+                This exact line has appeared in previous year papers: "Multi-Tasking is the more upgraded version of Multi-Programming"
+            </div>
+
+            <h3>Exam Strategy:</h3>
+            <div class="os-type-card">
+                <h4>When asked about running multiple programs:</h4>
+                <ul>
+                    <li>If only <strong>Multi-Programming</strong> is in options → Select it</li>
+                    <li>If only <strong>Multi-Tasking</strong> is in options → Select it</li>
+                    <li>If <strong>BOTH</strong> are in options → Select <strong>Multi-Tasking</strong> (it's more advanced)</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box blue">
+                <p><strong>Also Known As:</strong> <span class="key-point">Time Sharing</span></p>
+                <p>CPU time is shared between multiple users/processes simultaneously.</p>
+            </div>
+        </div>
+
+        <!-- Slide 3: How Multi-Tasking Works -->
+        <div class="slide">
+            <span class="slide-number">3 / 16</span>
+            <h2>🔄 How Multi-Tasking Works</h2>
+
+            <div class="analogy-box">
+                Imagine 4 guests come for dinner, each eating 4 rotis. You have only 8 rotis ready. Instead of serving 2 people fully and making others wait, you give 1-1 roti to everyone, then repeat. Everyone feels served!
+            </div>
+
+            <h3>The Switching Mechanism:</h3>
+            <div class="highlight-box">
+                <p>CPU doesn't fully complete one program before moving to next.</p>
+                <p>Instead, it <span class="key-point">switches between programs</span> very quickly:</p>
+                <ul>
+                    <li>Process P1 for a bit → Switch to P2</li>
+                    <li>Process P2 for a bit → Switch to P3</li>
+                    <li>Process P3 for a bit → Switch to P4</li>
+                    <li>Back to P1 → Continue the cycle</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box green">
+                <h3>Key Insight:</h3>
+                <p>This switching is <strong>SO FAST</strong> that it appears all programs are running <span class="key-point">simultaneously</span>!</p>
+                <p><strong>Reality:</strong> Programs run <span class="key-point">alternatively</span> (one by one)</p>
+                <p><strong>Perception:</strong> Programs appear to run <span class="key-point">simultaneously</span></p>
+            </div>
+        </div>
+
+        <!-- Slide 4: OS Evolution - Software Level -->
+        <div class="slide">
+            <span class="slide-number">4 / 16</span>
+            <h2>📈 OS Evolution: Software Level Upgrades</h2>
+
+            <div class="process-flow">
+                <div class="process-box">Batch Processing</div>
+                <span class="arrow">→</span>
+                <div class="process-box">Multi-Programming</div>
+                <span class="arrow">→</span>
+                <div class="process-box">Multi-Tasking</div>
+            </div>
+
+            <div class="highlight-box">
+                <h3>Important Observation:</h3>
+                <p>All these upgrades are at <span class="key-point">SOFTWARE LEVEL</span>, not hardware!</p>
+                <p>In all three types: <strong>Single Processor/CPU</strong> is used.</p>
+            </div>
+
+            <h3>The Goal of These Upgrades:</h3>
+            <div class="two-column">
+                <div class="os-type-card">
+                    <h4>For Users:</h4>
+                    <p>Give <strong>maximum inputs</strong></p>
+                </div>
+                <div class="os-type-card">
+                    <h4>From Computer:</h4>
+                    <p>Get <strong>maximum outputs</strong> as fast as possible</p>
+                </div>
+            </div>
+
+            <div class="highlight-box red">
+                <h3>⚠️ The Risk:</h3>
+                <p>What if this single processor <strong>fails</strong>?</p>
+                <p>All software advancements become <strong>useless</strong>!</p>
+                <p>For systems handling millions of requests, this is a <strong>major problem</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Multi-Processing OS -->
+        <div class="slide">
+            <span class="slide-number">5 / 16</span>
+            <h2>⚡ Multi-Processing Operating System</h2>
+
+            <div class="highlight-box">
+                <h3>The Solution: Hardware Advancement!</h3>
+                <p>Multi-Processing OS uses <span class="key-point">MORE THAN ONE CPU/Processor</span> in a single computer system.</p>
+            </div>
+
+            <div class="analogy-box">
+                Think of your family: Dad is the main "processor" earning for everyone. But what if he gets sick? That's why YOU want to become independent - to become another "processor" and share the load!
+            </div>
+
+            <h3>Key Features:</h3>
+            <div class="os-type-card">
+                <ul>
+                    <li>Uses <strong>2 or more CPUs</strong> in single computer</li>
+                    <li>Multiple processors share: Computer Bus, Clock, Memory</li>
+                    <li>Resources are shared between processors</li>
+                    <li>If one processor fails, others continue working</li>
+                    <li><strong>Hardware level</strong> advancement (not just software)</li>
+                </ul>
+            </div>
+
+            <div class="exam-tip">
+                Multi-Processing = Multiple Processors (Hardware upgrade)<br>
+                Multi-Programming/Multi-Tasking = Single Processor (Software upgrade)
+            </div>
+        </div>
+
+        <!-- Slide 6: Important MCQ Pattern -->
+        <div class="slide">
+            <span class="slide-number">6 / 16</span>
+            <h2>📝 Important MCQ Pattern</h2>
+
+            <div class="highlight-box">
+                <h3>Question Type 1:</h3>
+                <p><em>"Which OS allows processing more than one program at a time?"</em></p>
+                <p>Options: Multi-Programming, Batch Processing, Multi-Processing, All</p>
+                <p><strong>Answer:</strong> <span class="key-point">Multi-Programming</span></p>
+            </div>
+
+            <div class="highlight-box blue">
+                <h3>Question Type 2:</h3>
+                <p><em>"Which OS allows processing more than one program at a time <strong>with help of multiple processors</strong>?"</em></p>
+                <p><strong>Answer:</strong> <span class="key-point">Multi-Processing</span></p>
+            </div>
+
+            <div class="comparison-table">
+                <tr>
+                    <th>Feature</th>
+                    <th>Multi-Programming</th>
+                    <th>Multi-Tasking</th>
+                    <th>Multi-Processing</th>
+                </tr>
+                <tr>
+                    <td>Number of CPUs</td>
+                    <td>Single</td>
+                    <td>Single</td>
+                    <td>Multiple</td>
+                </tr>
+                <tr>
+                    <td>Upgrade Type</td>
+                    <td>Software</td>
+                    <td>Software</td>
+                    <td>Hardware</td>
+                </tr>
+                <tr>
+                    <td>Multiple Programs</td>
+                    <td>Yes</td>
+                    <td>Yes</td>
+                    <td>Yes</td>
+                </tr>
+            </div>
+        </div>
+
+        <!-- Slide 7: Real-Time OS Introduction -->
+        <div class="slide">
+            <span class="slide-number">7 / 16</span>
+            <h2>⏱️ Real-Time Operating System (RTOS)</h2>
+
+            <div class="highlight-box">
+                <h3>Main Characteristic:</h3>
+                <p>Tasks are given a <span class="key-point">FIXED TIME LIMIT</span> to complete.</p>
+                <p>Expected to finish within that time limit!</p>
+            </div>
+
+            <div class="analogy-box">
+                Like an exam: You have 2 hours to solve 150 questions. The examiner doesn't need students who can solve 150 questions - they need students who can solve them IN 2 HOURS!
+            </div>
+
+            <h3>Key Definition:</h3>
+            <div class="highlight-box green">
+                <p>In RTOS, as soon as input is entered, system provides <span class="key-point">IMMEDIATE or QUICK response</span>.</p>
+                <p><strong>RTOS = They are FAST!</strong></p>
+            </div>
+
+            <h3>Examples of RTOS:</h3>
+            <ul>
+                <li>🏧 <strong>ATM Machines</strong> - Millions transacting simultaneously, yet instant response</li>
+                <li>🚂 <strong>Railway Reservation</strong> - Lakhs booking at same time, immediate confirmation</li>
+                <li>🚦 <strong>Traffic Lights</strong> - Must switch exactly on time</li>
+                <li>🚗 <strong>Car Airbags</strong> - Must deploy instantly on collision</li>
+            </ul>
+        </div>
+
+        <!-- Slide 8: Soft vs Hard RTOS -->
+        <div class="slide">
+            <span class="slide-number">8 / 16</span>
+            <h2>⏱️ Types of RTOS: Soft vs Hard</h2>
+
+            <div class="two-column">
+                <div class="highlight-box green">
+                    <h3>Soft Real-Time OS</h3>
+                    <p>Time limit is fixed, BUT if task fails:</p>
+                    <ul>
+                        <li>✅ You can <strong>RE-ATTEMPT</strong></li>
+                        <li>✅ No major disaster</li>
+                        <li>✅ System continues working</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li>ATM transactions (retry possible)</li>
+                        <li>Railway reservations</li>
+                        <li>Online examinations</li>
+                    </ul>
+                </div>
+                <div class="highlight-box red">
+                    <h3>Hard Real-Time OS</h3>
+                    <p>Time limit is fixed, AND if task fails:</p>
+                    <ul>
+                        <li>❌ <strong>NO re-attempt</strong> possible</li>
+                        <li>❌ Major disaster/damage occurs</li>
+                        <li>❌ Critical failure</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li>Traffic lights (wrong timing = accidents)</li>
+                        <li>Car airbags (late = injury/death)</li>
+                        <li>Medical equipment</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="exam-tip">
+                Soft RTOS: Failure is recoverable (can retry)<br>
+                Hard RTOS: Failure is catastrophic (no second chance)
+            </div>
+        </div>
+
+        <!-- Slide 9: CPU Scheduling Introduction -->
+        <div class="slide">
+            <span class="slide-number">9 / 16</span>
+            <h2>📊 CPU Scheduling - Introduction</h2>
+
+            <div class="highlight-box">
+                <h3>What is CPU Scheduling?</h3>
+                <p>The <strong>strategy</strong> used by CPU to process inputs and provide outputs as quickly as possible with minimum effort.</p>
+            </div>
+
+            <h3>Important Terms to Know:</h3>
+            
+            <div class="os-type-card">
+                <h4>1. CPU Utilization</h4>
+                <p>Keep the CPU as <strong>busy as possible</strong>. CPU is the brain - it should always be working!</p>
+            </div>
+
+            <div class="os-type-card">
+                <h4>2. Throughput</h4>
+                <p>Use CPU to maximum capacity. Get <strong>maximum outputs</strong> from it!</p>
+            </div>
+        </div>
+
+        <!-- Slide 10: Time-Related Terms -->
+        <div class="slide">
+            <span class="slide-number">10 / 16</span>
+            <h2>⏰ CPU Scheduling - Time Terms</h2>
+
+            <div class="analogy-box">
+                Imagine visiting a doctor's clinic. You arrive at 10 AM, doctor calls you at 12:30 PM, treats you till 1 PM, and you leave at 2 PM. Let's understand all times using this example!
+            </div>
+
+            <div class="os-type-card">
+                <h4>Arrival Time (AT)</h4>
+                <p>Time when process enters the system (RAM)</p>
+                <p><em>Example: You arrived at clinic at <strong>10:00 AM</strong></em></p>
+            </div>
+
+            <div class="os-type-card">
+                <h4>Burst Time (BT)</h4>
+                <p>Time taken by CPU to process the task</p>
+                <p><em>Example: Doctor treated you for <strong>30 minutes</strong> (12:30 to 1:00 PM)</em></p>
+            </div>
+
+            <div class="os-type-card">
+                <h4>Completion Time (CT)</h4>
+                <p>Time when process finishes execution</p>
+                <p><em>Example: Your treatment completed at <strong>1:00 PM</strong></em></p>
+            </div>
+
+            <div class="os-type-card">
+                <h4>Exit Time</h4>
+                <p>Time when process leaves the system</p>
+                <p><em>Example: You left clinic at <strong>2:00 PM</strong></em></p>
+            </div>
+        </div>
+
+        <!-- Slide 11: More Time Terms & Formulas -->
+        <div class="slide">
+            <span class="slide-number">11 / 16</span>
+            <h2>⏰ Important Formulas</h2>
+
+            <div class="formula-box">
+                <p><strong>Turn Around Time (TAT)</strong></p>
+                <p class="formula">TAT = Completion Time - Arrival Time</p>
+                <p><em>Total time from arrival to completion</em></p>
+            </div>
+
+            <div class="formula-box">
+                <p><strong>Waiting Time (WT)</strong></p>
+                <p class="formula">WT = Turn Around Time - Burst Time</p>
+                <p><em>Time spent waiting (not being processed)</em></p>
+            </div>
+
+            <div class="formula-box">
+                <p><strong>Response Time (RT)</strong></p>
+                <p class="formula">RT = CPU First Arrival - Original Arrival Time</p>
+                <p><em>Time until CPU first responds to the process</em></p>
+            </div>
+
+            <div class="highlight-box">
+                <h3>Doctor's Clinic Example:</h3>
+                <ul>
+                    <li><strong>Arrival Time:</strong> 10:00 AM</li>
+                    <li><strong>Response Time:</strong> 2.5 hours (10 AM to 12:30 PM)</li>
+                    <li><strong>Burst Time:</strong> 30 minutes (12:30 to 1:00 PM)</li>
+                    <li><strong>Completion Time:</strong> 1:00 PM</li>
+                    <li><strong>TAT:</strong> 3 hours (10 AM to 1 PM)</li>
+                    <li><strong>Waiting Time:</strong> 2.5 hours (TAT - BT = 3 - 0.5)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 12: Preemptive vs Non-Preemptive -->
+        <div class="slide">
+            <span class="slide-number">12 / 16</span>
+            <h2>🔀 Scheduling Algorithm Types</h2>
+
+            <div class="highlight-box">
+                <p>Scheduling algorithms are of <strong>two types</strong>:</p>
+            </div>
+
+            <div class="two-column">
+                <div class="highlight-box green">
+                    <h3>Preemptive</h3>
+                    <p>Task is processed <strong>bit by bit</strong></p>
+                    <ul>
+                        <li>Start → Process a little → Switch</li>
+                        <li>Come back → Process more → Switch</li>
+                        <li>Continue until complete</li>
+                    </ul>
+                    <p><strong>Prevents CPU Monopolization</strong></p>
+                </div>
+                <div class="highlight-box red">
+                    <h3>Non-Preemptive</h3>
+                    <p>Task runs <strong>start to finish</strong></p>
+                    <ul>
+                        <li>Start → Process completely → Exit</li>
+                        <li>Won't leave CPU until done</li>
+                        <li>Other tasks must wait</li>
+                    </ul>
+                    <p><strong>CPU Monopolization occurs</strong></p>
+                </div>
+            </div>
+
+            <div class="exam-tip">
+                Q: Which algorithm prevents CPU monopolization?<br>
+                A: Preemptive Algorithm
+            </div>
+
+            <div class="highlight-box blue">
+                <p><strong>Key Point:</strong> In Non-Preemptive algorithms, <span class="key-point">Waiting Time = Response Time</span></p>
+            </div>
+        </div>
+
+        <!-- Slide 13: FCFS Algorithm -->
+        <div class="slide">
+            <span class="slide-number">13 / 16</span>
+            <h2>📋 First Come First Serve (FCFS)</h2>
+
+            <div class="highlight-box">
+                <h3>FCFS Algorithm</h3>
+                <p><strong>Type:</strong> Non-Preemptive</p>
+                <p><strong>Rule:</strong> Whoever arrives first gets served first!</p>
+            </div>
+
+            <h3>Understanding with Ready Queue & Gantt Chart:</h3>
+            
+            <div class="os-type-card">
+                <h4>Ready Queue (RAM)</h4>
+                <p>Where processes wait before going to CPU</p>
+                <p>Shows the order of processes waiting</p>
+            </div>
+
+            <div class="os-type-card">
+                <h4>Gantt Chart (CPU)</h4>
+                <p>Shows how CPU processes each task</p>
+                <p>Visual representation of execution order</p>
+            </div>
+
+            <div class="highlight-box blue">
+                <h3>Remember:</h3>
+                <ul>
+                    <li>Input goes to <strong>RAM first</strong>, then to <strong>CPU</strong></li>
+                    <li>First process to arrive has <strong>Waiting Time = 0</strong></li>
+                    <li>In Gantt Chart: Left side = Start time, Right side = Completion time</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 14: FCFS Example Problem -->
+        <div class="slide">
+            <span class="slide-number">14 / 16</span>
+            <h2>📊 FCFS Example Problem</h2>
+
+            <h3>Given Data:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Process</th>
+                    <th>Arrival Time</th>
+                    <th>Burst Time</th>
+                </tr>
+                <tr><td>P1</td><td>2</td><td>6</td></tr>
+                <tr><td>P2</td><td>5</td><td>3</td></tr>
+                <tr><td>P3</td><td>1</td><td>8</td></tr>
+                <tr><td>P4</td><td>0</td><td>3</td></tr>
+                <tr><td>P5</td><td>4</td><td>4</td></tr>
+            </table>
+
+            <h3>Gantt Chart (Execution Order):</h3>
+            <div class="gantt-chart">
+                <div class="gantt-row">
+                    <div class="gantt-cell p4" style="width: 90px;">P4</div>
+                    <div class="gantt-cell p3" style="width: 240px;">P3</div>
+                    <div class="gantt-cell p1" style="width: 180px;">P1</div>
+                    <div class="gantt-cell p5" style="width: 120px;">P5</div>
+                    <div class="gantt-cell p2" style="width: 90px;">P2</div>
+                </div>
+                <div class="gantt-time">
+                    <span>0</span>
+                    <span style="margin-left: 50px;">3</span>
+                    <span style="margin-left: 200px;">11</span>
+                    <span style="margin-left: 140px;">17</span>
+                    <span style="margin-left: 80px;">21</span>
+                    <span style="margin-left: 50px;">24</span>
+                </div>
+            </div>
+
+            <p><strong>Order:</strong> P4 (AT=0) → P3 (AT=1) → P1 (AT=2) → P5 (AT=4) → P2 (AT=5)</p>
+        </div>
+
+        <!-- Slide 15: FCFS Calculations -->
+        <div class="slide">
+            <span class="slide-number">15 / 16</span>
+            <h2>📊 FCFS Calculations</h2>
+
+            <h3>Complete Solution:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Process</th>
+                    <th>AT</th>
+                    <th>BT</th>
+                    <th>CT</th>
+                    <th>TAT</th>
+                    <th>WT</th>
+                    <th>RT</th>
+                </tr>
+                <tr>
+                    <td>P4</td><td>0</td><td>3</td><td>3</td><td>3</td><td>0</td><td>0</td>
+                </tr>
+                <tr>
+                    <td>P3</td><td>1</td><td>8</td><td>11</td><td>10</td><td>2</td><td>2</td>
+                </tr>
+                <tr>
+                    <td>P1</td><td>2</td><td>6</td><td>17</td><td>15</td><td>9</td><td>9</td>
+                </tr>
+                <tr>
+                    <td>P5</td><td>4</td><td>4</td><td>21</td><td>17</td><td>13</td><td>13</td>
+                </tr>
+                <tr>
+                    <td>P2</td><td>5</td><td>3</td><td>24</td><td>19</td><td>16</td><td>16</td>
+                </tr>
+            </table>
+
+            <h3>Formulas Used:</h3>
+            <div class="two-column">
+                <div class="formula-box">
+                    <p class="formula">TAT = CT - AT</p>
+                </div>
+                <div class="formula-box">
+                    <p class="formula">WT = TAT - BT</p>
+                </div>
+            </div>
+
+            <div class="highlight-box green">
+                <p><strong>Notice:</strong> P4 has WT = 0 (first to arrive, no waiting!)</p>
+                <p><strong>Notice:</strong> In Non-Preemptive FCFS, <strong>WT = RT</strong> for all processes!</p>
+            </div>
+        </div>
+
+        <!-- Slide 16: Summary -->
+        <div class="slide">
+            <span class="slide-number">16 / 16</span>
+            <h2>📝 Summary & Key Points</h2>
+
+            <div class="two-column">
+                <div class="highlight-box">
+                    <h3>🎯 OS Types:</h3>
+                    <ul>
+                        <li><strong>Multi-Tasking</strong> = Upgraded Multi-Programming</li>
+                        <li><strong>Multi-Processing</strong> = Multiple CPUs</li>
+                        <li><strong>Soft RTOS</strong> = Re-attempt possible</li>
+                        <li><strong>Hard RTOS</strong> = No second chance</li>
+                    </ul>
+                </div>
+                <div class="highlight-box blue">
+                    <h3>📋 Formulas:</h3>
+                    <ul>
+                        <li>TAT = CT - AT</li>
+                        <li>WT = TAT - BT</li>
+                        <li>RT = CPU First Arrival - AT</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="highlight-box green">
+                <h3>🔑 Key Differences:</h3>
+                <table class="comparison-table">
+                    <tr>
+                        <th>Preemptive</th>
+                        <th>Non-Preemptive</th>
+                    </tr>
+                    <tr>
+                        <td>Process bit by bit</td>
+                        <td>Process completely</td>
+                    </tr>
+                    <tr>
+                        <td>Prevents monopolization</td>
+                        <td>CPU monopolization occurs</td>
+                    </tr>
+                    <tr>
+                        <td>WT ≠ RT (usually)</td>
+                        <td>WT = RT</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="exam-tip">
+                FCFS is Non-Preemptive: First process has WT=0, and WT=RT for all processes!
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+            <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="slide-dots" id="dots"></div>
+    </div>
+
+    <footer>
+        <p>Operating System - Lesson 3 | Computer Foundation Course | Khan Global Studies</p>
+    </footer>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        const dotsContainer = document.getElementById('dots');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.onclick = () => goToSlide(i);
+            dotsContainer.appendChild(dot);
+        }
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                }
+            });
+
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                }
+            });
+
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 0) currentSlide = 0;
+            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+            updateSlide();
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlide();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            }
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    changeSlide(1);
+                } else {
+                    changeSlide(-1);
+                }
+            }
+        }
+
+        updateSlide();
+    </script>
+</body>
+</html>
